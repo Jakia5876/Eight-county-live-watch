@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>World Clocks — 8 Cities</title>
+
 <style>
   :root{
     --bg:#160c0b;
@@ -12,17 +13,66 @@
     --gold-dark:#b08a30;
     --text:#f6e9d6;
   }
-  body{margin:0;font-family:Inter,Arial;background:var(--bg);color:var(--text);padding:28px;}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;}
-  .card{background:#1b0f0e;border-radius:6px;padding:18px;text-align:center;}
-  .clock-wrap{width:220px;height:220px;margin:auto;position:relative;}
-  canvas.analog{width:200px;height:200px;border-radius:50%;background:#0003;}
-  .clock-frame{position:absolute;width:210px;height:210px;border-radius:50%;pointer-events:none;}
-  .city{font-weight:700;color:var(--gold);margin-top:4px;}
-  .country{font-size:12px;color:#c9b99b;}
-  .digital{margin-top:8px;font-family:"Courier New";font-size:13px;}
+
+  body{
+    margin:0;
+    font-family:Inter,Arial;
+    background:var(--bg);
+    color:var(--text);
+    padding:28px;
+  }
+
+  h1{margin-bottom:25px;}
+
+  /* FORCE 8 CLOCKS IN ONE LINE */
+  .grid{
+    display:flex;
+    gap:20px;
+    overflow-x:auto;
+    padding-bottom:20px;
+  }
+
+  .card{
+    background:#1b0f0e;
+    border-radius:8px;
+    padding:18px;
+    text-align:center;
+    min-width:240px;
+  }
+
+  .clock-wrap{
+    width:220px;
+    height:220px;
+    margin:auto;
+    position:relative;
+  }
+
+  canvas.analog{
+    width:200px;
+    height:200px;
+    border-radius:50%;
+    background:#0003;
+  }
+
+  .city{
+    font-weight:700;
+    color:var(--gold);
+    margin-top:6px;
+  }
+
+  .country{
+    font-size:12px;
+    color:#c9b99b;
+  }
+
+  .digital{
+    margin-top:8px;
+    font-family:"Courier New";
+    font-size:14px;
+  }
 </style>
 </head>
+
 <body>
 <h1>Live World Clocks</h1>
 <div class="grid" id="grid"></div>
@@ -38,60 +88,114 @@ const clocks=[
   {city:"Valletta",country:"Malta",tz:"Europe/Malta"},
   {city:"Riyadh",country:"Saudi Arabia",tz:"Asia/Riyadh"}
 ];
+
 const grid=document.getElementById('grid');
+
 clocks.forEach((c,i)=>{
   const card=document.createElement('div');
   card.className='card';
   card.innerHTML=`
     <div class="clock-wrap">
       <canvas class="analog" id="clock-${i}" width="400" height="400"></canvas>
-      <div class="clock-frame"></div>
     </div>
     <div class="city">${c.city}</div>
     <div class="country">(${c.country})</div>
     <div class="digital" id="digital-${i}">--:--:--</div>`;
   grid.appendChild(card);
 });
+
 function getTimePartsForTZ(tz){
   const now=new Date();
-  const p=new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(now);
+  const p=new Intl.DateTimeFormat('en-GB',{
+    timeZone:tz,hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'
+  }).formatToParts(now);
+
   const o={hour:0,minute:0,second:0};
-  p.forEach(x=>{if(x.type==='hour')o.hour=parseInt(x.value);if(x.type==='minute')o.minute=parseInt(x.value);if(x.type==='second')o.second=parseInt(x.value);});
+  p.forEach(x=>{
+    if(x.type==='hour')o.hour=parseInt(x.value);
+    if(x.type==='minute')o.minute=parseInt(x.value);
+    if(x.type==='second')o.second=parseInt(x.value);
+  });
   return o;
 }
+
 function drawClock(canvas,h,m,s){
   const ctx=canvas.getContext('2d');
-  const cx=canvas.width/2,cy=canvas.height/2,r=160;
+  const cx=canvas.width/2;
+  const cy=canvas.height/2;
+  const r=160;
+
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.03)';ctx.fill();
-  ctx.save();ctx.translate(cx,cy);
+
+  // BACKGROUND GLOW
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,0.04)';
+  ctx.fill();
+
+  // HOUR NUMBERS (1–12)
+  ctx.font="26px Arial";
+  ctx.fillStyle="#ffffff";
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+
+  for(let num=1; num<=12; num++){
+    let ang=(num*Math.PI/6) - Math.PI/2;
+    let tx=cx + Math.cos(ang)*110;
+    let ty=cy + Math.sin(ang)*110;
+    ctx.fillText(num, tx, ty);
+  }
+
+  // MINUTE MARKERS
+  ctx.save();
+  ctx.translate(cx,cy);
   for(let i=0;i<60;i++){
-    ctx.beginPath();ctx.rotate(Math.PI*2/60);
-    ctx.moveTo(0,-r+10);ctx.lineTo(0,-r+20);
-    ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=(i%5===0)?3:1;
+    ctx.beginPath();
+    ctx.rotate(Math.PI/30);
+    ctx.moveTo(0,-r+15);
+    ctx.lineTo(0,-r+25);
+    ctx.strokeStyle='rgba(255,255,255,0.2)';
+    ctx.lineWidth=(i%5===0)?3:1;
     ctx.stroke();
   }
   ctx.restore();
+
+  // HAND FUNCTION
   function hand(angle,len,w,color){
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(angle);
-    ctx.beginPath();ctx.lineWidth=w;ctx.strokeStyle=color;
-    ctx.moveTo(0,0);ctx.lineTo(len,0);ctx.stroke();ctx.restore();
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.lineWidth=w;
+    ctx.strokeStyle=color;
+    ctx.moveTo(0,0);
+    ctx.lineTo(len,0);
+    ctx.stroke();
+    ctx.restore();
   }
-  hand(((h%12)+m/60)*Math.PI/6 - Math.PI/2, r*0.5, 5, '#d8b24a');
+
+  // HOUR HAND
+  hand(((h%12)+m/60)*Math.PI/6 - Math.PI/2, r*0.50, 6, '#d8b24a');
+
+  // MINUTE HAND
   hand((m*Math.PI/30) - Math.PI/2, r*0.75, 4, '#ffffff');
+
+  // SECOND HAND
   hand((s*Math.PI/30) - Math.PI/2, r*0.85, 2, '#cc4444');
 }
+
 function updateAll(){
   clocks.forEach((c,i)=>{
     const t=getTimePartsForTZ(c.tz);
-    const canvas=document.getElementById(`clock-${i}`);
-    drawClock(canvas,t.hour,t.minute,t.second);
-    const d=document.getElementById(`digital-${i}`);
-    const p=n=>String(n).padStart(2,'0');
-    d.textContent=`${p(t.hour)}:${p(t.minute)}:${p(t.second)}`;
+    drawClock(document.getElementById(`clock-${i}`), t.hour,t.minute,t.second);
+    document.getElementById(`digital-${i}`).textContent =
+      `${String(t.hour).padStart(2,'0')}:${String(t.minute).padStart(2,'0')}:${String(t.second).padStart(2,'0')}`;
   });
 }
-updateAll();setInterval(updateAll,1000);
+
+updateAll();
+setInterval(updateAll,1000);
 </script>
+
 </body>
 </html>

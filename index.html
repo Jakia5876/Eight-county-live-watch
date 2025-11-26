@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>World Clocks — 8 Cities</title>
+<title>World Clocks — Selected Cities</title>
 
 <style>
   :root{
@@ -34,12 +34,11 @@
     font-weight:400;
   }
 
-  /* -------- GRID - Optimized for full viewport visibility -------- */
   .grid{
     display:grid;
     grid-template-columns:repeat(4, 1fr);
-    gap:12px 15px;  /* Reduced gap for better fit */
-    max-width:1200px;  /* Constrained max width */
+    gap:12px 15px;
+    max-width:1200px;
     margin:0 auto;
   }
 
@@ -49,9 +48,8 @@
     text-align:center;
   }
 
-  /* -------- CLOCK SIZE - Balanced for viewport -------- */
   .clock-wrap{
-    width:240px;  /* Optimized size for full visibility */
+    width:240px;
     height:240px;
     margin:auto;
     position:relative;
@@ -86,7 +84,6 @@
     color:#d4c5a9;
   }
 
-  /* Responsive breakpoints */
   @media (max-width: 1300px) {
     .clock-wrap, canvas.analog {
       width:220px;
@@ -120,15 +117,15 @@
 <div class="grid" id="grid"></div>
 
 <script>
-const clocks=[
-  {city:"Dhaka",country:"Bangladesh",tz:"Asia/Dhaka"},
-  {city:"New York",country:"USA",tz:"America/New_York"},
-  {city:"London",country:"UK",tz:"Europe/London"},
-  {city:"Toronto",country:"Canada",tz:"America/Toronto"},
-  {city:"Sydney",country:"Australia",tz:"Australia/Sydney"},
-  {city:"Madrid",country:"Spain",tz:"Europe/Madrid"},
-  {city:"Valletta",country:"Malta",tz:"Europe/Malta"},
-  {city:"Riyadh",country:"Saudi Arabia",tz:"Asia/Riyadh"}
+const clocks = [
+  { city: "Dhaka", country: "Bangladesh", tz: "Asia/Dhaka" },
+  { city: "New York", country: "USA", tz: "America/New_York" },
+  { city: "London", country: "UK", tz: "Europe/London" },
+  { city: "Tokyo", country: "Japan", tz: "Asia/Tokyo" },
+  { city: "Hong Kong", country: "Hong Kong", tz: "Asia/Hong_Kong" },
+  { city: "Toronto", country: "Canada", tz: "America/Toronto" },
+  { city: "Beijing", country: "China", tz: "Asia/Shanghai" },
+  { city: "Sydney", country: "Australia", tz: "Australia/Sydney" }
 ];
 
 const grid=document.getElementById('grid');
@@ -171,7 +168,6 @@ function drawClock(canvas,h,m,s){
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // background circle with subtle gradient
   const gradient=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
   gradient.addColorStop(0,'rgba(40,25,23,0.6)');
   gradient.addColorStop(1,'rgba(20,10,8,0.8)');
@@ -181,14 +177,12 @@ function drawClock(canvas,h,m,s){
   ctx.fillStyle=gradient;
   ctx.fill();
 
-  // outer ring
   ctx.beginPath();
   ctx.arc(cx,cy,r-2,0,Math.PI*2);
   ctx.strokeStyle='rgba(216,178,74,0.15)';
   ctx.lineWidth=3;
   ctx.stroke();
 
-  // hour/minute ticks + numbers
   ctx.save();
   ctx.translate(cx,cy);
 
@@ -198,7 +192,6 @@ function drawClock(canvas,h,m,s){
   for(let i=1;i<=60;i++){
     ctx.rotate(Math.PI/30);
 
-    // minute ticks
     ctx.beginPath();
     ctx.moveTo(0,-r+12);
     ctx.lineTo(0,-r+26);
@@ -206,7 +199,6 @@ function drawClock(canvas,h,m,s){
     ctx.lineWidth=(i%5===0)?3.5:1.5;
     ctx.stroke();
 
-    // hour numbers
     if(i%5===0){
       ctx.save();
       ctx.translate(0,-r+52);
@@ -231,13 +223,11 @@ function drawClock(canvas,h,m,s){
     ctx.restore();
   }
 
-  // center dot
   ctx.beginPath();
   ctx.arc(cx,cy,8,0,Math.PI*2);
   ctx.fillStyle='#d8b24a';
   ctx.fill();
 
-  // hands
   hand(((h%12)+m/60)*Math.PI/6 - Math.PI/2, r*0.50, 7, '#d8b24a');
   hand((m*Math.PI/30) - Math.PI/2, r*0.75, 5, '#ffffff');
   hand((s*Math.PI/30) - Math.PI/2, r*0.82, 2.5, '#ff4444');

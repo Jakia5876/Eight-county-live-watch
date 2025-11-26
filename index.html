@@ -18,62 +18,86 @@
     font-family:Inter,Arial;
     background:var(--bg);
     color:var(--text);
-    padding:28px;
+    padding:40px 60px;
   }
 
   h1{
     text-align:center;
-    margin-bottom:30px;
-    font-size:32px;
-    letter-spacing:1px;
+    margin-bottom:50px;
+    font-size:36px;
+    letter-spacing:1.5px;
+    font-weight:400;
   }
 
-  /* -------- GRID FIX (4 per row = TWO ROWS) -------- */
+  /* -------- GRID with LARGER clocks and LESS gap -------- */
   .grid{
     display:grid;
     grid-template-columns:repeat(4, 1fr);
-    gap:30px;
-    justify-items:center;
+    gap:15px 20px;  /* Reduced gap: 15px vertical, 20px horizontal */
+    max-width:1400px;
+    margin:0 auto;
   }
 
   .card{
-    background:var(--card);
+    background:transparent;  /* Removed card background for cleaner look */
     border-radius:8px;
-    padding:20px;
+    padding:10px;
     text-align:center;
-    width:260px;
   }
 
+  /* -------- LARGER CLOCK SIZE -------- */
   .clock-wrap{
-    width:240px;
-    height:240px;
+    width:280px;  /* Increased from 240px */
+    height:280px;
     margin:auto;
     position:relative;
   }
 
   canvas.analog{
-    width:240px;
-    height:240px;
+    width:280px;  /* Increased from 240px */
+    height:280px;
     border-radius:50%;
-    background:#0002;
+    background:#0003;
+    box-shadow:0 4px 15px rgba(0,0,0,0.4);
   }
 
   .city{
-    font-weight:700;
+    font-weight:600;
     color:var(--gold);
-    margin-top:6px;
-    font-size:18px;
+    margin-top:8px;
+    font-size:16px;
+    letter-spacing:0.5px;
   }
 
   .country{
-    font-size:13px;
-    color:#ccbca3;
+    font-size:12px;
+    color:#9a8a73;
+    margin-top:2px;
   }
 
   .digital{
-    margin-top:10px;
-    font-family:"Courier New";
-    font-size:14px;
+    margin-top:6px;
+    font-family:"Courier New", monospace;
+    font-size:13px;
+    color:#d4c5a9;
+  }
+
+  @media (max-width: 1400px) {
+    .grid{
+      grid-template-columns:repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 1000px) {
+    .grid{
+      grid-template-columns:repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 650px) {
+    .grid{
+      grid-template-columns:1fr;
+    }
   }
 </style>
 </head>
@@ -102,7 +126,7 @@ clocks.forEach((c,i)=>{
   card.className='card';
   card.innerHTML=`
     <div class="clock-wrap">
-      <canvas class="analog" id="clock-${i}" width="400" height="400"></canvas>
+      <canvas class="analog" id="clock-${i}" width="480" height="480"></canvas>
     </div>
     <div class="city">${c.city}</div>
     <div class="country">(${c.country})</div>
@@ -131,40 +155,51 @@ function getTimePartsForTZ(tz){
 
 function drawClock(canvas,h,m,s){
   const ctx=canvas.getContext('2d');
-  const cx=canvas.width/2, cy=canvas.height/2, r=160;
+  const cx=canvas.width/2, cy=canvas.height/2, r=200;  /* Increased radius */
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // background circle
+  // background circle with subtle gradient
+  const gradient=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+  gradient.addColorStop(0,'rgba(40,25,23,0.6)');
+  gradient.addColorStop(1,'rgba(20,10,8,0.8)');
+  
   ctx.beginPath();
   ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.fillStyle='rgba(255,255,255,0.05)';
+  ctx.fillStyle=gradient;
   ctx.fill();
+
+  // outer ring
+  ctx.beginPath();
+  ctx.arc(cx,cy,r-2,0,Math.PI*2);
+  ctx.strokeStyle='rgba(216,178,74,0.15)';
+  ctx.lineWidth=3;
+  ctx.stroke();
 
   // hour/minute ticks + numbers
   ctx.save();
   ctx.translate(cx,cy);
 
-  ctx.font="24px Arial";
-  ctx.fillStyle="#fff8";
+  ctx.font="28px Arial";
+  ctx.fillStyle="#f6e9d6";
 
   for(let i=1;i<=60;i++){
     ctx.rotate(Math.PI/30);
 
     // minute ticks
     ctx.beginPath();
-    ctx.moveTo(0,-r+10);
-    ctx.lineTo(0,-r+22);
-    ctx.strokeStyle="rgba(255,255,255,0.25)";
-    ctx.lineWidth=(i%5===0)?3:1;
+    ctx.moveTo(0,-r+12);
+    ctx.lineTo(0,-r+26);
+    ctx.strokeStyle=(i%5===0)?"rgba(216,178,74,0.6)":"rgba(255,255,255,0.2)";
+    ctx.lineWidth=(i%5===0)?3.5:1.5;
     ctx.stroke();
 
     // hour numbers
     if(i%5===0){
       ctx.save();
-      ctx.translate(0,-r+45);
+      ctx.translate(0,-r+52);
       ctx.rotate(-(Math.PI/30)*i);
-      ctx.fillText(i/5, -7, 7);
+      ctx.fillText(i/5, -9, 9);
       ctx.restore();
     }
   }
@@ -177,16 +212,23 @@ function drawClock(canvas,h,m,s){
     ctx.beginPath();
     ctx.lineWidth=w;
     ctx.strokeStyle=color;
+    ctx.lineCap='round';
     ctx.moveTo(0,0);
     ctx.lineTo(len,0);
     ctx.stroke();
     ctx.restore();
   }
 
-  // hands
-  hand(((h%12)+m/60)*Math.PI/6 - Math.PI/2, r*0.55, 6, '#d8b24a');
-  hand((m*Math.PI/30) - Math.PI/2, r*0.78, 4, '#ffffff');
-  hand((s*Math.PI/30) - Math.PI/2, r*0.85, 2, '#ff4444');
+  // center dot
+  ctx.beginPath();
+  ctx.arc(cx,cy,8,0,Math.PI*2);
+  ctx.fillStyle='#d8b24a';
+  ctx.fill();
+
+  // hands (with slight shadow effect)
+  hand(((h%12)+m/60)*Math.PI/6 - Math.PI/2, r*0.50, 7, '#d8b24a');
+  hand((m*Math.PI/30) - Math.PI/2, r*0.75, 5, '#ffffff');
+  hand((s*Math.PI/30) - Math.PI/2, r*0.82, 2.5, '#ff4444');
 }
 
 function updateAll(){

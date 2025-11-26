@@ -10,7 +10,6 @@
     --bg:#160c0b;
     --card:#1f0f0e;
     --gold:#d8b24a;
-    --gold-dark:#b08a30;
     --text:#f6e9d6;
   }
 
@@ -22,51 +21,57 @@
     padding:28px;
   }
 
-  h1{margin-bottom:25px;}
+  h1{
+    text-align:center;
+    margin-bottom:30px;
+    font-size:32px;
+    letter-spacing:1px;
+  }
 
-  /* FORCE 8 CLOCKS IN ONE LINE */
+  /* -------- GRID FIX (4 per row = TWO ROWS) -------- */
   .grid{
-    display:flex;
-    gap:20px;
-    overflow-x:auto;
-    padding-bottom:20px;
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:30px;
+    justify-items:center;
   }
 
   .card{
-    background:#1b0f0e;
+    background:var(--card);
     border-radius:8px;
-    padding:18px;
+    padding:20px;
     text-align:center;
-    min-width:240px;
+    width:260px;
   }
 
   .clock-wrap{
-    width:220px;
-    height:220px;
+    width:240px;
+    height:240px;
     margin:auto;
     position:relative;
   }
 
   canvas.analog{
-    width:200px;
-    height:200px;
+    width:240px;
+    height:240px;
     border-radius:50%;
-    background:#0003;
+    background:#0002;
   }
 
   .city{
     font-weight:700;
     color:var(--gold);
     margin-top:6px;
+    font-size:18px;
   }
 
   .country{
-    font-size:12px;
-    color:#c9b99b;
+    font-size:13px;
+    color:#ccbca3;
   }
 
   .digital{
-    margin-top:8px;
+    margin-top:10px;
     font-family:"Courier New";
     font-size:14px;
   }
@@ -75,6 +80,7 @@
 
 <body>
 <h1>Live World Clocks</h1>
+
 <div class="grid" id="grid"></div>
 
 <script>
@@ -107,7 +113,11 @@ clocks.forEach((c,i)=>{
 function getTimePartsForTZ(tz){
   const now=new Date();
   const p=new Intl.DateTimeFormat('en-GB',{
-    timeZone:tz,hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'
+    timeZone:tz,
+    hour12:false,
+    hour:'2-digit',
+    minute:'2-digit',
+    second:'2-digit'
   }).formatToParts(now);
 
   const o={hour:0,minute:0,second:0};
@@ -121,46 +131,45 @@ function getTimePartsForTZ(tz){
 
 function drawClock(canvas,h,m,s){
   const ctx=canvas.getContext('2d');
-  const cx=canvas.width/2;
-  const cy=canvas.height/2;
-  const r=160;
+  const cx=canvas.width/2, cy=canvas.height/2, r=160;
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // BACKGROUND GLOW
+  // background circle
   ctx.beginPath();
   ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.fillStyle='rgba(255,255,255,0.04)';
+  ctx.fillStyle='rgba(255,255,255,0.05)';
   ctx.fill();
 
-  // HOUR NUMBERS (1–12)
-  ctx.font="26px Arial";
-  ctx.fillStyle="#ffffff";
-  ctx.textAlign="center";
-  ctx.textBaseline="middle";
-
-  for(let num=1; num<=12; num++){
-    let ang=(num*Math.PI/6) - Math.PI/2;
-    let tx=cx + Math.cos(ang)*110;
-    let ty=cy + Math.sin(ang)*110;
-    ctx.fillText(num, tx, ty);
-  }
-
-  // MINUTE MARKERS
+  // hour/minute ticks + numbers
   ctx.save();
   ctx.translate(cx,cy);
-  for(let i=0;i<60;i++){
-    ctx.beginPath();
+
+  ctx.font="24px Arial";
+  ctx.fillStyle="#fff8";
+
+  for(let i=1;i<=60;i++){
     ctx.rotate(Math.PI/30);
-    ctx.moveTo(0,-r+15);
-    ctx.lineTo(0,-r+25);
-    ctx.strokeStyle='rgba(255,255,255,0.2)';
+
+    // minute ticks
+    ctx.beginPath();
+    ctx.moveTo(0,-r+10);
+    ctx.lineTo(0,-r+22);
+    ctx.strokeStyle="rgba(255,255,255,0.25)";
     ctx.lineWidth=(i%5===0)?3:1;
     ctx.stroke();
+
+    // hour numbers
+    if(i%5===0){
+      ctx.save();
+      ctx.translate(0,-r+45);
+      ctx.rotate(-(Math.PI/30)*i);
+      ctx.fillText(i/5, -7, 7);
+      ctx.restore();
+    }
   }
   ctx.restore();
 
-  // HAND FUNCTION
   function hand(angle,len,w,color){
     ctx.save();
     ctx.translate(cx,cy);
@@ -174,28 +183,26 @@ function drawClock(canvas,h,m,s){
     ctx.restore();
   }
 
-  // HOUR HAND
-  hand(((h%12)+m/60)*Math.PI/6 - Math.PI/2, r*0.50, 6, '#d8b24a');
-
-  // MINUTE HAND
-  hand((m*Math.PI/30) - Math.PI/2, r*0.75, 4, '#ffffff');
-
-  // SECOND HAND
-  hand((s*Math.PI/30) - Math.PI/2, r*0.85, 2, '#cc4444');
+  // hands
+  hand(((h%12)+m/60)*Math.PI/6 - Math.PI/2, r*0.55, 6, '#d8b24a');
+  hand((m*Math.PI/30) - Math.PI/2, r*0.78, 4, '#ffffff');
+  hand((s*Math.PI/30) - Math.PI/2, r*0.85, 2, '#ff4444');
 }
 
 function updateAll(){
   clocks.forEach((c,i)=>{
     const t=getTimePartsForTZ(c.tz);
-    drawClock(document.getElementById(`clock-${i}`), t.hour,t.minute,t.second);
-    document.getElementById(`digital-${i}`).textContent =
-      `${String(t.hour).padStart(2,'0')}:${String(t.minute).padStart(2,'0')}:${String(t.second).padStart(2,'0')}`;
+    const canvas=document.getElementById(`clock-${i}`);
+    drawClock(canvas,t.hour,t.minute,t.second);
+
+    const p=n=>String(n).padStart(2,'0');
+    document.getElementById(`digital-${i}`).textContent=
+      `${p(t.hour)}:${p(t.minute)}:${p(t.second)}`;
   });
 }
 
 updateAll();
 setInterval(updateAll,1000);
 </script>
-
 </body>
 </html>

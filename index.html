@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>World Clocks — Selected Cities</title>
+<title>World Clocks — 8 Countries</title>
 
 <style>
   :root{
@@ -107,6 +107,10 @@
     .grid{
       grid-template-columns:1fr;
     }
+    .clock-wrap, canvas.analog {
+      width:280px;
+      height:280px;
+    }
   }
 </style>
 </head>
@@ -121,11 +125,11 @@ const clocks = [
   { city: "Dhaka", country: "Bangladesh", tz: "Asia/Dhaka" },
   { city: "New York", country: "USA", tz: "America/New_York" },
   { city: "London", country: "UK", tz: "Europe/London" },
-  { city: "Tokyo", country: "Japan", tz: "Asia/Tokyo" },
-  { city: "Hong Kong", country: "Hong Kong", tz: "Asia/Hong_Kong" },
   { city: "Toronto", country: "Canada", tz: "America/Toronto" },
-  { city: "Beijing", country: "China", tz: "Asia/Shanghai" },
-  { city: "Sydney", country: "Australia", tz: "Australia/Sydney" }
+  { city: "Sydney", country: "Australia", tz: "Australia/Sydney" },
+  { city: "Madrid", country: "Spain", tz: "Europe/Madrid" },
+  { city: "Valletta", country: "Malta", tz: "Europe/Malta" },
+  { city: "Riyadh", country: "Saudi Arabia", tz: "Asia/Riyadh" }
 ];
 
 const grid=document.getElementById('grid');
@@ -137,9 +141,9 @@ clocks.forEach((c,i)=>{
     <div class="clock-wrap">
       <canvas class="analog" id="clock-${i}" width="480" height="480"></canvas>
     </div>
+    <div class="digital" id="digital-${i}">--:--:--</div>
     <div class="city">${c.city}</div>
-    <div class="country">(${c.country})</div>
-    <div class="digital" id="digital-${i}">--:--:--</div>`;
+    <div class="country">(${c.country})</div>`;
   grid.appendChild(card);
 });
 
@@ -168,6 +172,7 @@ function drawClock(canvas,h,m,s){
 
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
+  // Background gradient
   const gradient=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
   gradient.addColorStop(0,'rgba(40,25,23,0.6)');
   gradient.addColorStop(1,'rgba(20,10,8,0.8)');
@@ -177,12 +182,14 @@ function drawClock(canvas,h,m,s){
   ctx.fillStyle=gradient;
   ctx.fill();
 
+  // Golden border
   ctx.beginPath();
   ctx.arc(cx,cy,r-2,0,Math.PI*2);
   ctx.strokeStyle='rgba(216,178,74,0.15)';
   ctx.lineWidth=3;
   ctx.stroke();
 
+  // Draw tick marks and numbers
   ctx.save();
   ctx.translate(cx,cy);
 
@@ -192,6 +199,7 @@ function drawClock(canvas,h,m,s){
   for(let i=1;i<=60;i++){
     ctx.rotate(Math.PI/30);
 
+    // Tick marks
     ctx.beginPath();
     ctx.moveTo(0,-r+12);
     ctx.lineTo(0,-r+26);
@@ -199,6 +207,7 @@ function drawClock(canvas,h,m,s){
     ctx.lineWidth=(i%5===0)?3.5:1.5;
     ctx.stroke();
 
+    // Numbers (1-12)
     if(i%5===0){
       ctx.save();
       ctx.translate(0,-r+52);
@@ -209,6 +218,7 @@ function drawClock(canvas,h,m,s){
   }
   ctx.restore();
 
+  // Draw hands
   function hand(angle,len,w,color){
     ctx.save();
     ctx.translate(cx,cy);
@@ -223,13 +233,19 @@ function drawClock(canvas,h,m,s){
     ctx.restore();
   }
 
+  // Center dot
   ctx.beginPath();
   ctx.arc(cx,cy,8,0,Math.PI*2);
   ctx.fillStyle='#d8b24a';
   ctx.fill();
 
+  // Hour hand (shortest, golden)
   hand(((h%12)+m/60)*Math.PI/6 - Math.PI/2, r*0.50, 7, '#d8b24a');
+  
+  // Minute hand (medium, white)
   hand((m*Math.PI/30) - Math.PI/2, r*0.75, 5, '#ffffff');
+  
+  // Second hand (longest, red)
   hand((s*Math.PI/30) - Math.PI/2, r*0.82, 2.5, '#ff4444');
 }
 
@@ -239,9 +255,17 @@ function updateAll(){
     const canvas=document.getElementById(`clock-${i}`);
     drawClock(canvas,t.hour,t.minute,t.second);
 
-    const p=n=>String(n).padStart(2,'0');
-    document.getElementById(`digital-${i}`).textContent=
-      `${p(t.hour)}:${p(t.minute)}:${p(t.second)}`;
+    // Update digital time with AM/PM
+    const now=new Date();
+    const digitalTime=new Intl.DateTimeFormat('en-US',{
+      timeZone:c.tz,
+      hour:'2-digit',
+      minute:'2-digit',
+      second:'2-digit',
+      hour12:true
+    }).format(now);
+    
+    document.getElementById(`digital-${i}`).textContent=digitalTime;
   });
 }
 
